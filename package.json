@@ -1,0 +1,30 @@
+{
+  "name": "court-report",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A batteries-included AdonisJS starter kit for building modern APIs with type-safe frontend integration",
+  "license": "MIT",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "format": "turbo format",
+    "typecheck": "turbo typecheck"
+  },
+  "devDependencies": {
+    "@adonisjs/prettier-config": "^1.4.5",
+    "prettier": "^3.8.2",
+    "turbo": "^2.9.6"
+  },
+  "packageManager": "npm@11.8.0",
+  "prettier": "@adonisjs/prettier-config"
+}
