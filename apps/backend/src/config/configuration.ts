@@ -24,4 +24,16 @@ export const configuration = () => ({
     password: process.env.SMTP_PASSWORD,
     from: process.env.SMTP_FROM,
   },
+  jwt: {
+    secret: process.env.JWT_SECRET,
+    accessExpires: process.env.JWT_ACCESS_EXPIRES || '15m',
+    refreshExpires: process.env.JWT_REFRESH_EXPIRES || '7d',
+  },
+  cors: {
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  },
+  payment: {
+    reporterRatePerMinute: parseInt(process.env.REPORTER_RATE_PER_MINUTE || '2000', 10),
+    editorFlatRate: parseInt(process.env.EDITOR_FLAT_RATE || '150000', 10),
+  },
 });
