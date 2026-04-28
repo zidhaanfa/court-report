@@ -12,7 +12,7 @@ import { Link } from "@tanstack/react-router"
 import { ChevronLeftIcon } from "lucide-react"
 
 export function RoleDetailPage() {
-  const { id } = useParams({ from: "/app/app/access/roles/$id" })
+  const { id } = useParams({ from: "/app/access/roles/$id" })
   const role = roles.find((r) => r.id === id)
 
   if (!role) return <div>Role not found</div>

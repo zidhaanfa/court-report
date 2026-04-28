@@ -11,7 +11,7 @@ import { Link } from "@tanstack/react-router"
 import { ChevronLeftIcon } from "lucide-react"
 
 export function PermissionDetailPage() {
-  const { id } = useParams({ from: "/app/app/access/permissions/$id" })
+  const { id } = useParams({ from: "/app/access/permissions/$id" })
   const permission = permissions.find((p) => p.id === id)
 
   if (!permission) return <div>Permission not found</div>

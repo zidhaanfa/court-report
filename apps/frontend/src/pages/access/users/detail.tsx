@@ -12,7 +12,7 @@ import { Link } from "@tanstack/react-router"
 import { ChevronLeftIcon } from "lucide-react"
 
 export function UserDetailPage() {
-  const { id } = useParams({ from: "/app/app/access/users/$id" })
+  const { id } = useParams({ from: "/app/access/users/$id" })
   const user = users.find((u) => u.id === id)
 
   if (!user) return <div>User not found</div>

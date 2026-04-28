@@ -1,5 +1,4 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
-import { badgeVariants } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { permissions } from "@/lib/mock-data"
 import { Link } from "@tanstack/react-router"
