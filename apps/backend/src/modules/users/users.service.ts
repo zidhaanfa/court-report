@@ -12,6 +12,7 @@ import { Role } from '../roles/entities/role.entity';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { UserStatus } from '@court-workflow/shared';
 import { PaginationMeta } from '@court-workflow/shared';
+import { SettingsService } from '../settings/settings.service';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -22,6 +23,7 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
+    private readonly settingsService: SettingsService,
   ) {}
 
   async findAll(
@@ -82,6 +84,15 @@ export class UsersService {
       phone: createUserDto.phone,
       city: createUserDto.city,
     });
+
+    const settings = await this.settingsService.getSettings();
+    const defaultRole = await this.roleRepository.findOne({
+      where: { name: settings.defaultRoleName },
+    });
+
+    if (defaultRole) {
+      user.roles = [defaultRole];
+    }
 
     const savedUser = await this.userRepository.save(user);
     return this.findOne(savedUser.id);

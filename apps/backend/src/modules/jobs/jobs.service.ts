@@ -23,9 +23,10 @@ import {
   AssignmentType,
   UserStatus,
 } from '@court-workflow/shared';
-import type { JwtPayload } from '../../common/types/jwt-payload.type';
 import { ConfigService } from '@nestjs/config';
 import { PaginationMeta } from '@court-workflow/shared';
+import { SettingsService } from '../settings/settings.service';
+import { JwtPayload } from 'src/common/types/jwt-payload.type';
 
 // ── State Machine ────────────────────────────────────────────────
 const ALLOWED_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
@@ -48,6 +49,7 @@ export class JobsService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly configService: ConfigService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   async findAll(
@@ -188,12 +190,14 @@ export class JobsService {
       `Assigned reporter: ${reporter.fullName}`,
     );
 
+    const settings = await this.settingsService.getSettings();
+
     // 7. Auto-create PENDING payment for reporter
     await this.createPayment(
       jobId,
       reporter.id,
       AssignmentType.REPORTER,
-      this.configService.get<number>('payment.reporterRatePerMinute') || 2000,
+      settings.reporterRatePerMinute,
     );
 
     return this.findOne(jobId);
@@ -234,12 +238,14 @@ export class JobsService {
     job.editorId = editor.id;
     await this.jobRepository.save(job);
 
+    const settings = await this.settingsService.getSettings();
+
     // 5. Auto-create PENDING payment for editor
     await this.createPayment(
       jobId,
       editor.id,
       AssignmentType.EDITOR,
-      this.configService.get<number>('payment.editorFlatRate') || 150000,
+      settings.editorFlatRate,
     );
 
     return this.findOne(jobId);

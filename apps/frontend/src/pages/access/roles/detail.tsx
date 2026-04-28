@@ -14,9 +14,24 @@ import {
   AlertCircleIcon,
   KeyIcon,
   TrashIcon,
+  PencilIcon,
 } from "lucide-react"
 import { useApi } from "@/hooks/use-api"
 import { api } from "@/lib/axios"
+import { useState, useEffect } from "react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@workspace/ui/components/dialog"
+import { Input } from "@workspace/ui/components/input"
+import { Label } from "@workspace/ui/components/label"
+import { Textarea } from "@workspace/ui/components/textarea"
+import { Checkbox } from "@workspace/ui/components/checkbox"
 
 interface Permission {
   id: string
@@ -37,6 +52,53 @@ interface RoleData {
 export function RoleDetailPage() {
   const { id } = useParams({ from: "/app/access/roles/$id" })
   const { data: role, isLoading, error, refetch } = useApi<RoleData>(`/roles/${id}`)
+  const { data: allPermissions } = useApi<Permission[]>('/roles/permissions')
+
+  const [editOpen, setEditOpen] = useState(false)
+  const [updating, setUpdating] = useState(false)
+  const [editData, setEditData] = useState({
+    name: "",
+    description: "",
+    permissionIds: [] as string[],
+  })
+
+  // Sync form state when role data is loaded and dialog opens
+  useEffect(() => {
+    if (role && editOpen) {
+      setEditData({
+        name: role.name,
+        description: role.description ?? "",
+        permissionIds: role.permissions.map((p) => p.id),
+      })
+    }
+  }, [role, editOpen])
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setUpdating(true)
+    try {
+      await api.patch(`/roles/${id}`, {
+        name: editData.name,
+        description: editData.description || undefined,
+        permissionIds: editData.permissionIds,
+      })
+      setEditOpen(false)
+      refetch()
+    } catch (err: any) {
+      alert(err?.response?.data?.message ?? 'Failed to update role')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const togglePermission = (permId: string) => {
+    setEditData((prev) => ({
+      ...prev,
+      permissionIds: prev.permissionIds.includes(permId)
+        ? prev.permissionIds.filter((id) => id !== permId)
+        : [...prev.permissionIds, permId],
+    }))
+  }
 
   const handleDelete = async () => {
     if (!role) return
@@ -85,12 +147,88 @@ export function RoleDetailPage() {
             <Badge variant="outline">Custom</Badge>
           )}
         </div>
-        {!role.isSystem && (
-          <Button variant="destructive" size="sm" onClick={handleDelete}>
-            <TrashIcon className="h-4 w-4 mr-1" />
-            Delete Role
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {!role.isSystem && (
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <PencilIcon className="h-4 w-4 mr-1" />
+                  Edit Role
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                <form onSubmit={handleUpdate}>
+                  <DialogHeader>
+                    <DialogTitle>Edit Role</DialogTitle>
+                    <DialogDescription>
+                      Update role details and assign permissions.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-6 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="edit-name">Role Name</Label>
+                      <Input
+                        id="edit-name"
+                        value={editData.name}
+                        onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                        required
+                        disabled={role.isSystem}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="edit-desc">Description</Label>
+                      <Textarea
+                        id="edit-desc"
+                        value={editData.description}
+                        onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                        rows={3}
+                      />
+                    </div>
+                    
+                    <div className="space-y-3 border-t pt-4">
+                      <h4 className="text-sm font-medium leading-none">Permissions</h4>
+                      <p className="text-sm text-muted-foreground">Select the permissions for this role.</p>
+                      
+                      <div className="grid gap-4 sm:grid-cols-2 mt-4">
+                        {(allPermissions ?? []).map((perm) => (
+                          <div key={perm.id} className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                            <Checkbox
+                              id={`perm-${perm.id}`}
+                              checked={editData.permissionIds.includes(perm.id)}
+                              onCheckedChange={() => togglePermission(perm.id)}
+                            />
+                            <div className="space-y-1 leading-none">
+                              <Label htmlFor={`perm-${perm.id}`} className="font-mono">{perm.name}</Label>
+                              <p className="text-xs text-muted-foreground">
+                                {perm.description}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={updating}>
+                      {updating ? <Loader2Icon className="h-4 w-4 animate-spin mr-1" /> : null}
+                      Save Changes
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          {!role.isSystem && (
+            <Button variant="destructive" size="sm" onClick={handleDelete}>
+              <TrashIcon className="h-4 w-4 mr-1" />
+              Delete Role
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Overview Card */}

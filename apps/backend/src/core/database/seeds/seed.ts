@@ -143,6 +143,19 @@ async function seed() {
       console.log('ℹ️  Admin user already exists, skipping');
     }
 
+    // ── 5. Default Settings ────────────────────────────────────────
+    const settingsExisting = await queryRunner.query('SELECT id FROM settings LIMIT 1');
+    if (settingsExisting.length === 0) {
+      await queryRunner.query(
+        `INSERT INTO settings ("reporterRatePerMinute", "editorFlatRate", "defaultRoleName", "paymentDueDays")
+         VALUES ($1, $2, $3, $4)`,
+        [50000, 500000, 'REPORTER', 30]
+      );
+      console.log('✅ Default settings seeded (Rates in IDR)');
+    } else {
+      console.log('ℹ️  Settings already exist, skipping');
+    }
+
     await queryRunner.commitTransaction();
     console.log('\n🎉 Seed completed successfully!');
   } catch (err) {

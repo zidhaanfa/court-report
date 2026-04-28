@@ -11,8 +11,8 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  entities: [join(__dirname, '../**/*.entity{.ts,.js}')],
-  migrations: [join(__dirname, '../core/database/migrations/*{.ts,.js}')],
+  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+  migrations: [__dirname + '/../core/database/migrations/*{.ts,.js}'],
   synchronize: false, // Must be false when using migrations
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 };
