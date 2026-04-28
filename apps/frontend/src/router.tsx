@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router'
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@workspace/ui/components/sidebar'
 import { AppSidebar } from './components/app-sidebar'
+import { useAuthStore } from './stores/auth.store'
 
 // Import Access Pages
 import { UsersPage } from './pages/access/users'
@@ -57,6 +58,14 @@ const appLayoutRoute = createRoute({
   path: '/app',
   component: AppLayout,
   beforeLoad: ({ location }) => {
+    // Auth guard — redirect unauthenticated users to sign-in
+    const { isAuthenticated } = useAuthStore.getState()
+    if (!isAuthenticated) {
+      throw redirect({
+        to: '/signin',
+        search: { redirect: location.href },
+      })
+    }
     if (location.pathname === '/app' || location.pathname === '/app/') {
       throw redirect({ to: '/app/dashboard' })
     }
@@ -123,6 +132,12 @@ const authLayoutRoute = createRoute({
 const signInRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: 'signin',
+  beforeLoad: () => {
+    const { isAuthenticated } = useAuthStore.getState()
+    if (isAuthenticated) {
+      throw redirect({ to: '/app/dashboard' })
+    }
+  },
   component: () => <LoginForm />,
 })
 
