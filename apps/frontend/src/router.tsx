@@ -16,6 +16,7 @@ import { RolesPage } from './pages/access/roles'
 import { RoleDetailPage } from './pages/access/roles/detail'
 import { PermissionsPage } from './pages/access/permissions'
 import { PermissionDetailPage } from './pages/access/permissions/detail'
+import { SettingsPage } from './pages/settings'
 import { LoginForm } from './components/login-form'
 
 // -- Layouts --
@@ -122,6 +123,13 @@ const permissionDetailRoute = createRoute({
   component: PermissionDetailPage,
 })
 
+// Settings
+const settingsRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: 'settings',
+  component: SettingsPage,
+})
+
 // Auth Group (No Sidebar)
 const authLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -213,6 +221,7 @@ const routeTree = rootRoute.addChildren([
     roleDetailRoute,
     permissionsRoute,
     permissionDetailRoute,
+    settingsRoute,
   ]),
   authLayoutRoute.addChildren([signInRoute]),
 ])

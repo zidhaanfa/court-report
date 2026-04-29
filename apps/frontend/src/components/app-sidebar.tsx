@@ -19,6 +19,7 @@ import {
   BriefcaseIcon,
   LifeBuoyIcon,
   GavelIcon,
+  SettingsIcon,
 } from "lucide-react"
 import { useAuthStore } from "../stores/auth.store"
 import { Link } from "@tanstack/react-router"
@@ -43,6 +44,11 @@ const navMain = [
     title: "Jobs",
     url: "/app/jobs",
     icon: (<BriefcaseIcon />),
+  },
+  {
+    title: "Settings",
+    url: "/app/settings",
+    icon: (<SettingsIcon />),
   },
 ]
 
