@@ -23,6 +23,7 @@ import { Loader2, DollarSign, CheckCircle2, ExternalLink } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { usePaginatedApi } from '@/hooks/use-paginated-api'
 import { DataTablePagination } from '@workspace/ui/components/data-table-pagination'
+import { Skeleton } from '@workspace/ui/components/skeleton'
 
 // Types
 type PaymentStatus = 'PENDING' | 'PAID'
@@ -142,108 +143,141 @@ export function PaymentsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center p-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : payments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground">
-              <DollarSign className="h-12 w-12 text-muted mb-4" />
-              <p className="text-lg font-medium text-foreground">No payments found</p>
-              <p className="text-sm">We couldn't find any payment records matching your filter.</p>
-            </div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Job</TableHead>
-                    {canReadAllPayments && <TableHead>User</TableHead>}
-                    <TableHead>Role</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Job</TableHead>
+                {canReadAllPayments && <TableHead>User</TableHead>}
+                <TableHead>Role</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading && payments.length === 0 ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Skeleton className="h-4 w-[150px]" />
+                    </TableCell>
+                    {canReadAllPayments && (
+                      <TableCell>
+                        <Skeleton className="h-4 w-[120px]" />
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      <Skeleton className="h-6 w-[80px]" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-[100px]" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-6 w-[80px]" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="h-8 w-[80px] ml-auto" />
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payments.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <Link
-                            to="/app/jobs/$id"
-                            params={{ id: payment.jobId }}
-                            className="hover:underline flex items-center gap-1 text-primary"
-                          >
-                            {payment.job?.caseName || payment.jobId}
-                            <ExternalLink className="w-3 h-3" />
-                          </Link>
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {new Date(payment.createdAt).toLocaleDateString()}
-                        </div>
-                      </TableCell>
-                      {canReadAllPayments && (
-                        <TableCell>
-                          <div className="font-medium">{payment.user?.fullName}</div>
-                          <div className="text-xs text-muted-foreground">{payment.user?.email}</div>
-                        </TableCell>
-                      )}
+                ))
+              ) : payments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={canReadAllPayments ? 6 : 5} className="h-48 text-center">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground">
+                      <DollarSign className="h-12 w-12 text-muted mb-4" />
+                      <p className="text-lg font-medium text-foreground">No payments found</p>
+                      <p className="text-sm">
+                        We couldn't find any payment records matching your filter.
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                payments.map((payment) => (
+                  <TableRow
+                    key={payment.id}
+                    className={
+                      isLoading
+                        ? 'opacity-50 pointer-events-none transition-opacity'
+                        : 'transition-opacity'
+                    }
+                  >
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to="/app/jobs/$id"
+                          params={{ id: payment.jobId }}
+                          className="hover:underline flex items-center gap-1 text-primary"
+                        >
+                          {payment.job?.caseName || payment.jobId}
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {new Date(payment.createdAt).toLocaleDateString()}
+                      </div>
+                    </TableCell>
+                    {canReadAllPayments && (
                       <TableCell>
-                        <Badge variant="outline" className="bg-slate-50 text-slate-700">
-                          {payment.assignmentType}
+                        <div className="font-medium">{payment.user?.fullName}</div>
+                        <div className="text-xs text-muted-foreground">{payment.user?.email}</div>
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      <Badge variant="outline" className="bg-slate-50 text-slate-700">
+                        {payment.assignmentType}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-semibold text-primary">
+                      {formatCurrency(payment.amount)}
+                    </TableCell>
+                    <TableCell>
+                      {payment.status === 'PAID' ? (
+                        <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          PAID
                         </Badge>
-                      </TableCell>
-                      <TableCell className="font-semibold text-primary">
-                        {formatCurrency(payment.amount)}
-                      </TableCell>
-                      <TableCell>
-                        {payment.status === 'PAID' ? (
-                          <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                            PAID
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="secondary"
-                            className="bg-orange-100 text-orange-800 hover:bg-orange-200 border-orange-200"
-                          >
-                            PENDING
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {canMarkPaid && payment.status === 'PENDING' ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-green-600 border-green-200 hover:bg-green-50"
-                            onClick={() => handleMarkPaid(payment.id)}
-                            disabled={processingId === payment.id}
-                          >
-                            {processingId === payment.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              'Mark as Paid'
-                            )}
-                          </Button>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {meta && (
-                <DataTablePagination
-                  page={meta.page}
-                  totalPages={meta.totalPages}
-                  onPageChange={setPage}
-                  isLoading={isLoading}
-                />
+                      ) : (
+                        <Badge
+                          variant="secondary"
+                          className="bg-orange-100 text-orange-800 hover:bg-orange-200 border-orange-200"
+                        >
+                          PENDING
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {canMarkPaid && payment.status === 'PENDING' ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-green-600 border-green-200 hover:bg-green-50"
+                          onClick={() => handleMarkPaid(payment.id)}
+                          disabled={processingId === payment.id}
+                        >
+                          {processingId === payment.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            'Mark as Paid'
+                          )}
+                        </Button>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
-            </>
+            </TableBody>
+            )
+          </Table>
+          {meta && payments.length > 0 && (
+            <DataTablePagination
+              page={meta.page}
+              totalPages={meta.totalPages}
+              onPageChange={setPage}
+              isLoading={isLoading}
+            />
           )}
         </CardContent>
       </Card>

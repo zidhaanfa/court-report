@@ -1,6 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
+import { Skeleton } from "@workspace/ui/components/skeleton"
 import { Link } from "@tanstack/react-router"
 import { usePaginatedApi } from "@/hooks/use-paginated-api"
 import { DataTablePagination } from "@workspace/ui/components/data-table-pagination"
@@ -127,15 +128,19 @@ export function RolesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(roles ?? []).length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  No roles found
-                </TableCell>
-              </TableRow>
-            ) : (
-              (roles ?? []).map((role) => (
-                <TableRow key={role.id}>
+            {isLoading && (!roles || roles.length === 0) ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-[80px]" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-[60px]" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-8 w-[60px] ml-auto" /></TableCell>
+                </TableRow>
+              ))
+            ) : roles && roles.length > 0 ? (
+              roles.map((role) => (
+                <TableRow key={role.id} className={isLoading ? "opacity-50 pointer-events-none transition-opacity" : "transition-opacity"}>
                   <TableCell className="font-medium">{role.name}</TableCell>
                   <TableCell className="text-muted-foreground max-w-[200px] truncate">
                     {role.description ?? '—'}
@@ -159,6 +164,12 @@ export function RolesPage() {
                   </TableCell>
                 </TableRow>
               ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  No roles found
+                </TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>

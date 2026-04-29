@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@workspace/ui/components/table'
 import { Button } from '@workspace/ui/components/button'
+import { Skeleton } from '@workspace/ui/components/skeleton'
 import { Badge } from '@workspace/ui/components/badge'
 import {
   Dialog,
@@ -206,9 +207,20 @@ export function JobsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {jobs && jobs.length > 0 ? (
+            {isLoading && jobs.length === 0 ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-[60px]" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-[150px]" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-8 w-[80px] ml-auto" /></TableCell>
+                </TableRow>
+              ))
+            ) : jobs && jobs.length > 0 ? (
               jobs.map((job) => (
-                <TableRow key={job.id}>
+                <TableRow key={job.id} className={isLoading ? "opacity-50 pointer-events-none transition-opacity" : "transition-opacity"}>
                   <TableCell className="font-medium">{job.caseName}</TableCell>
                   <TableCell>
                     <StatusBadge status={job.status} />
