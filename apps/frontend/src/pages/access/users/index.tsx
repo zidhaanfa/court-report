@@ -1,13 +1,19 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
-import { Badge } from "@workspace/ui/components/badge"
-import { Button } from "@workspace/ui/components/button"
-import { Skeleton } from "@workspace/ui/components/skeleton"
-import { Link } from "@tanstack/react-router"
-import { usePaginatedApi } from "@/hooks/use-paginated-api"
-import { DataTablePagination } from "@workspace/ui/components/data-table-pagination"
-import { Loader2Icon, AlertCircleIcon, UsersIcon, PlusIcon } from "lucide-react"
-import { useState } from "react"
-import { api } from "@/lib/axios"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@workspace/ui/components/table'
+import { Badge } from '@workspace/ui/components/badge'
+import { Button } from '@workspace/ui/components/button'
+import { Skeleton } from '@workspace/ui/components/skeleton'
+import { Link } from '@tanstack/react-router'
+import { useUserStore } from '@/stores/user.store'
+import { DataTablePagination } from '@workspace/ui/components/data-table-pagination'
+import { Loader2Icon, AlertCircleIcon, UsersIcon, PlusIcon } from 'lucide-react'
+import React, { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -16,36 +22,26 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@workspace/ui/components/dialog"
-import { Input } from "@workspace/ui/components/input"
-import { Label } from "@workspace/ui/components/label"
-
-interface UserData {
-  id: string
-  email: string
-  fullName: string
-  phone: string | null
-  city: string | null
-  isAvailable: boolean
-  status: string
-  roles: Array<{ id: string; name: string }>
-  createdAt: string
-}
-
-
+} from '@workspace/ui/components/dialog'
+import { Input } from '@workspace/ui/components/input'
+import { Label } from '@workspace/ui/components/label'
 
 export function UsersPage() {
   const [page, setPage] = useState(1)
-  const { data: users, meta, isLoading, error, refetch } = usePaginatedApi<UserData>('/users', page)
+  const { users, meta, isLoading, error, fetchUsers, createUser } = useUserStore()
   const [open, setOpen] = useState(false)
   const [creating, setCreating] = useState(false)
+
+  React.useEffect(() => {
+    fetchUsers(page)
+  }, [fetchUsers, page])
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setCreating(true)
     const form = new FormData(e.currentTarget)
     try {
-      await api.post('/users', {
+      await createUser({
         email: form.get('email'),
         password: form.get('password'),
         fullName: form.get('fullName'),
@@ -53,7 +49,7 @@ export function UsersPage() {
         city: form.get('city') || undefined,
       })
       setOpen(false)
-      refetch()
+      fetchUsers(page)
     } catch (err: any) {
       alert(err?.response?.data?.message ?? 'Failed to create user')
     } finally {
@@ -74,7 +70,9 @@ export function UsersPage() {
       <div className="flex flex-col items-center gap-2 py-20 text-destructive">
         <AlertCircleIcon className="h-6 w-6" />
         <p className="text-sm">{error}</p>
-        <Button variant="outline" size="sm" onClick={refetch}>Retry</Button>
+        <Button variant="outline" size="sm" onClick={() => fetchUsers(page)}>
+          Retry
+        </Button>
       </div>
     )
   }
@@ -87,17 +85,23 @@ export function UsersPage() {
         <div className="flex items-center gap-2">
           <UsersIcon className="h-5 w-5 text-muted-foreground" />
           <h1 className="text-2xl font-bold">Users</h1>
-          <Badge variant="secondary" className="ml-1">{userList.length}</Badge>
+          <Badge variant="secondary" className="ml-1">
+            {userList.length}
+          </Badge>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm"><PlusIcon className="h-4 w-4 mr-1" /> Add User</Button>
+            <Button size="sm">
+              <PlusIcon className="h-4 w-4 mr-1" /> Add User
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <form onSubmit={handleCreate}>
               <DialogHeader>
                 <DialogTitle>Create User</DialogTitle>
-                <DialogDescription>Fill in the details to create a new user account.</DialogDescription>
+                <DialogDescription>
+                  Fill in the details to create a new user account.
+                </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
@@ -150,18 +154,39 @@ export function UsersPage() {
             {isLoading && (!users || users.length === 0) ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-[80px]" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-[100px]" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-                  <TableCell className="text-right"><Skeleton className="h-8 w-[60px] ml-auto" /></TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-[150px]" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-[120px]" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-[100px]" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-6 w-[80px]" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-6 w-[100px]" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-[100px]" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Skeleton className="h-8 w-[60px] ml-auto" />
+                  </TableCell>
                 </TableRow>
               ))
             ) : users && users.length > 0 ? (
               users.map((user) => (
-                <TableRow key={user.id} className={isLoading ? "opacity-50 pointer-events-none transition-opacity" : "transition-opacity"}>
+                <TableRow
+                  key={user.id}
+                  className={
+                    isLoading
+                      ? 'opacity-50 pointer-events-none transition-opacity'
+                      : 'transition-opacity'
+                  }
+                >
                   <TableCell className="font-medium">
                     <div className="flex flex-col">
                       <span>{user.fullName}</span>
@@ -176,16 +201,22 @@ export function UsersPage() {
                   </TableCell>
                   <TableCell>
                     {user.isAvailable ? (
-                      <Badge variant="default" className="bg-green-500">Available</Badge>
+                      <Badge variant="default" className="bg-green-500">
+                        Available
+                      </Badge>
                     ) : (
                       <Badge variant="secondary">Busy</Badge>
                     )}
                   </TableCell>
                   <TableCell>
                     {user.status === 'ACTIVE' ? (
-                      <Badge variant="outline" className="text-green-600 border-green-200">Active</Badge>
+                      <Badge variant="outline" className="text-green-600 border-green-200">
+                        Active
+                      </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-red-600 border-red-200">{user.status}</Badge>
+                      <Badge variant="outline" className="text-red-600 border-red-200">
+                        {user.status}
+                      </Badge>
                     )}
                   </TableCell>
                   <TableCell>

@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react'
-import { api } from '@/lib/axios'
+import React, { useEffect, useState } from 'react'
 import { useAuthStore } from '@/stores/auth.store'
 import {
   Table,
@@ -21,35 +20,9 @@ import { Badge } from '@workspace/ui/components/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card'
 import { Loader2, DollarSign, CheckCircle2, ExternalLink } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
-import { usePaginatedApi } from '@/hooks/use-paginated-api'
+import { usePaymentStore } from '@/stores/payment.store'
 import { DataTablePagination } from '@workspace/ui/components/data-table-pagination'
 import { Skeleton } from '@workspace/ui/components/skeleton'
-
-// Types
-type PaymentStatus = 'PENDING' | 'PAID'
-
-interface PaymentData {
-  id: string
-  jobId: string
-  userId: string
-  assignmentType: string
-  rate: number
-  amount: number
-  durationUsed?: number
-  status: PaymentStatus
-  createdAt: string
-  updatedAt: string
-  job?: {
-    id: string
-    caseName: string
-    duration: number
-  }
-  user?: {
-    id: string
-    fullName: string
-    email: string
-  }
-}
 
 export function PaymentsPage() {
   const [page, setPage] = useState(1)
@@ -79,14 +52,17 @@ export function PaymentsPage() {
     setPage(1)
   }, [statusFilter])
 
-  const { data: payments, meta, isLoading, refetch } = usePaginatedApi<PaymentData>(url, page)
+  const { payments, meta, isLoading, fetchPayments, markAsPaid } = usePaymentStore()
+
+  React.useEffect(() => {
+    fetchPayments(url, page, 50)
+  }, [fetchPayments, url, page])
 
   const handleMarkPaid = async (paymentId: string) => {
     setProcessingId(paymentId)
     setErrorMsg('')
     try {
-      await api.patch(`/payments/${paymentId}/mark-paid`)
-      refetch()
+      await markAsPaid(paymentId)
     } catch (error: any) {
       setErrorMsg(error.response?.data?.message || 'Failed to update payment status.')
     } finally {
