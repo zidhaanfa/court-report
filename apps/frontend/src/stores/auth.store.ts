@@ -17,7 +17,11 @@ export interface AuthUser {
   city: string | null
   isAvailable: boolean
   status: string
-  roles: Array<{ id: string; name: string }>
+  roles: Array<{ 
+    id: string; 
+    name: string;
+    permissions?: Array<{ id: string; name: string; description?: string }>;
+  }>
 }
 
 interface AuthState {
@@ -91,8 +95,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return user?.roles?.some((r) => r.name === role) ?? false
   },
 
-  hasPermission: (_permission) => {
-    // Permissions are derived from roles — extend this when needed
-    return true
+  hasPermission: (permission) => {
+    const { user } = get()
+    if (!user) return false
+    for (const role of user.roles) {
+      if (role.permissions?.some(p => p.name === permission)) {
+        return true
+      }
+    }
+    return false
   },
 }))

@@ -82,6 +82,7 @@ export function JobDetailPage() {
   const jobId = window.location.pathname.split('/').pop() || ''
 
   const currentUser = useAuthStore((s) => s.user)
+  const hasPermission = useAuthStore((s) => s.hasPermission)
 
   const { data: job, isLoading, error, refetch: refetchJob } = useApi<JobData>(`/jobs/${jobId}`)
   const { data: payments, refetch: refetchPayments } = useApi<PaymentData[]>(
@@ -189,6 +190,12 @@ export function JobDetailPage() {
   const isAssignedReporter = job.reporter?.id === currentUser?.id
   const isAssignedEditor = job.editor?.id === currentUser?.id
 
+  const canAssignReporter = hasPermission('job:assign-reporter')
+  const canAssignEditor = hasPermission('job:assign-editor')
+  const canMarkTranscribed = hasPermission('job:mark-transcribed')
+  const canMarkReviewed = hasPermission('job:mark-reviewed')
+  const canCompleteJob = hasPermission('job:complete')
+
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
       <div className="flex items-center gap-4">
@@ -270,12 +277,12 @@ export function JobDetailPage() {
                 <CardDescription>Personnel assigned to this job.</CardDescription>
               </div>
               <div>
-                {job.status === 'NEW' && isAdminOrManager && (
+                {job.status === 'NEW' && canAssignReporter && (
                   <Button size="sm" onClick={() => setReporterModalOpen(true)}>
                     Assign Reporter
                   </Button>
                 )}
-                {job.status === 'TRANSCRIBED' && isAdminOrManager && (
+                {job.status === 'TRANSCRIBED' && canAssignEditor && (
                   <Button size="sm" onClick={() => setEditorModalOpen(true)}>
                     Assign Editor
                   </Button>
@@ -299,7 +306,7 @@ export function JobDetailPage() {
                     )}
                   </div>
                 </div>
-                {job.status === 'ASSIGNED' && (isAssignedReporter || isAdminOrManager) && (
+                {job.status === 'ASSIGNED' && canMarkTranscribed && (isAssignedReporter || isAdminOrManager) && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -328,6 +335,7 @@ export function JobDetailPage() {
                 </div>
                 {job.status === 'TRANSCRIBED' &&
                   job.editor &&
+                  canMarkReviewed &&
                   (isAssignedEditor || isAdminOrManager) && (
                     <Button
                       size="sm"
@@ -339,7 +347,7 @@ export function JobDetailPage() {
                       Mark as Reviewed
                     </Button>
                   )}
-                {job.status === 'REVIEWED' && (isAssignedEditor || isAdminOrManager) && (
+                {job.status === 'REVIEWED' && canCompleteJob && (
                   <Button
                     size="sm"
                     variant="outline"
