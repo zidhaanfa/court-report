@@ -17,6 +17,8 @@ import { RoleDetailPage } from './pages/access/roles/detail'
 import { PermissionsPage } from './pages/access/permissions'
 import { PermissionDetailPage } from './pages/access/permissions/detail'
 import { SettingsPage } from './pages/settings'
+import { JobsPage } from './pages/jobs'
+import { JobDetailPage } from './pages/jobs/detail'
 import { LoginForm } from './components/login-form'
 
 // -- Layouts --
@@ -130,6 +132,19 @@ const settingsRoute = createRoute({
   component: SettingsPage,
 })
 
+// Jobs
+const jobsRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: 'jobs',
+  component: JobsPage,
+})
+
+const jobDetailRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: 'jobs/$id',
+  component: JobDetailPage,
+})
+
 // Auth Group (No Sidebar)
 const authLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -222,6 +237,8 @@ const routeTree = rootRoute.addChildren([
     permissionsRoute,
     permissionDetailRoute,
     settingsRoute,
+    jobsRoute,
+    jobDetailRoute,
   ]),
   authLayoutRoute.addChildren([signInRoute]),
 ])

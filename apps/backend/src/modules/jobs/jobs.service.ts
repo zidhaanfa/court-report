@@ -268,22 +268,50 @@ export class JobsService {
     }
 
     // 2. Validate caller permission per transition
-    if (
-      newStatus === JobStatus.TRANSCRIBED &&
-      job.reporterId !== currentUser.sub
-    ) {
-      throw new ForbiddenException(
-        'Only the assigned reporter can mark this job as TRANSCRIBED',
-      );
+    const userPermissions: string[] = currentUser.permissions ?? [];
+
+    if (newStatus === JobStatus.TRANSCRIBED) {
+      const canOverride = userPermissions.includes('job:mark-transcribed') &&
+        job.reporterId !== currentUser.sub;
+      if (!userPermissions.includes('job:mark-transcribed')) {
+        throw new ForbiddenException(
+          'You do not have permission to mark this job as TRANSCRIBED',
+        );
+      }
+      // If user has the permission but is NOT the assigned reporter, they need an override role (admin/manager)
+      if (job.reporterId !== currentUser.sub && !canOverride) {
+        throw new ForbiddenException(
+          'Only the assigned reporter (or override role) can mark this job as TRANSCRIBED',
+        );
+      }
     }
 
-    if (
-      newStatus === JobStatus.REVIEWED &&
-      job.editorId !== currentUser.sub
-    ) {
-      throw new ForbiddenException(
-        'Only the assigned editor can mark this job as REVIEWED',
-      );
+    if (newStatus === JobStatus.REVIEWED) {
+      if (!userPermissions.includes('job:mark-reviewed')) {
+        throw new ForbiddenException(
+          'You do not have permission to mark this job as REVIEWED',
+        );
+      }
+      // If user has the permission but is NOT the assigned editor, they need an override role (admin/manager)
+      if (job.editorId !== currentUser.sub &&
+          !userPermissions.includes('job:mark-reviewed') === false &&
+          job.editorId !== currentUser.sub) {
+        // Extra check: only override if they're not the assigned editor
+        // Admin/Manager with job:mark-reviewed can override, assigned editor can always do it
+      }
+      if (job.editorId !== currentUser.sub && !['ADMIN', 'MANAGER'].some(r => currentUser.roles.includes(r))) {
+        throw new ForbiddenException(
+          'Only the assigned editor (or Admin/Manager) can mark this job as REVIEWED',
+        );
+      }
+    }
+
+    if (newStatus === JobStatus.COMPLETED) {
+      if (!userPermissions.includes('job:complete')) {
+        throw new ForbiddenException(
+          'You do not have permission to complete this job',
+        );
+      }
     }
 
     const fromStatus = job.status;

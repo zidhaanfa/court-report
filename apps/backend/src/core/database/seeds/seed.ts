@@ -26,7 +26,10 @@ async function seed() {
       { name: 'job:delete', description: 'Delete jobs' },
       { name: 'job:assign-reporter', description: 'Assign reporter to job' },
       { name: 'job:assign-editor', description: 'Assign editor to job' },
-      { name: 'job:update-status', description: 'Update job status' },
+      { name: 'job:update-status', description: 'Update job status (generic)' },
+      { name: 'job:mark-transcribed', description: 'Mark job as TRANSCRIBED (assigned reporter or override)' },
+      { name: 'job:mark-reviewed', description: 'Mark job as REVIEWED (assigned editor or override)' },
+      { name: 'job:complete', description: 'Mark job as COMPLETED' },
       { name: 'payment:read', description: 'View payment records' },
       { name: 'payment:mark-paid', description: 'Mark payments as paid' },
       { name: 'payment:read-own', description: 'View own payment records' },
@@ -76,6 +79,7 @@ async function seed() {
       'auth:refresh', 'user:read',
       'job:create', 'job:read', 'job:update', 'job:delete',
       'job:assign-reporter', 'job:assign-editor', 'job:update-status',
+      'job:mark-transcribed', 'job:mark-reviewed', 'job:complete',
       'payment:read', 'payment:mark-paid',
     ];
     await queryRunner.query(
@@ -88,7 +92,11 @@ async function seed() {
     );
 
     // REPORTER permissions
-    const reporterPerms = ['auth:refresh', 'job:read', 'job:update-status', 'payment:read-own'];
+    const reporterPerms = [
+      'auth:refresh', 'job:read', 'job:update-status',
+      'job:mark-transcribed',
+      'payment:read-own',
+    ];
     await queryRunner.query(
       `INSERT INTO role_permissions (role_id, permission_id)
        SELECT r.id, p.id FROM roles r JOIN permissions p
@@ -99,7 +107,11 @@ async function seed() {
     );
 
     // EDITOR permissions
-    const editorPerms = ['auth:refresh', 'job:read', 'job:update-status', 'payment:read-own'];
+    const editorPerms = [
+      'auth:refresh', 'job:read', 'job:update-status',
+      'job:mark-reviewed',
+      'payment:read-own',
+    ];
     await queryRunner.query(
       `INSERT INTO role_permissions (role_id, permission_id)
        SELECT r.id, p.id FROM roles r JOIN permissions p
