@@ -183,7 +183,7 @@ export function JobDetailPage() {
   const canCompleteJob = hasPermission('job:complete')
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
+    <div className="flex flex-col gap-6 mx-auto w-full">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.history.back()}>
           <ArrowLeftIcon className="h-5 w-5" />
