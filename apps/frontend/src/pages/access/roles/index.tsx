@@ -2,7 +2,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { Link } from "@tanstack/react-router"
-import { useApi } from "@/hooks/use-api"
+import { usePaginatedApi } from "@/hooks/use-paginated-api"
+import { DataTablePagination } from "@workspace/ui/components/data-table-pagination"
 import { Loader2Icon, AlertCircleIcon, ShieldCheckIcon, PlusIcon } from "lucide-react"
 import { useState } from "react"
 import { api } from "@/lib/axios"
@@ -35,7 +36,8 @@ interface RoleData {
 }
 
 export function RolesPage() {
-  const { data: roles, isLoading, error, refetch } = useApi<RoleData[]>('/roles')
+  const [page, setPage] = useState(1)
+  const { data: roles, meta, isLoading, error, refetch } = usePaginatedApi<RoleData>('/roles', page)
   const [open, setOpen] = useState(false)
   const [creating, setCreating] = useState(false)
 
@@ -160,6 +162,14 @@ export function RolesPage() {
             )}
           </TableBody>
         </Table>
+        {meta && (
+          <DataTablePagination
+            page={meta.page}
+            totalPages={meta.totalPages}
+            onPageChange={setPage}
+            isLoading={isLoading}
+          />
+        )}
       </div>
     </div>
   )

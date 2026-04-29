@@ -20,6 +20,7 @@ import {
   LifeBuoyIcon,
   GavelIcon,
   SettingsIcon,
+  DollarSignIcon,
 } from "lucide-react"
 import { useAuthStore } from "../stores/auth.store"
 import { Link } from "@tanstack/react-router"
@@ -44,6 +45,11 @@ const navMain = [
     title: "Jobs",
     url: "/app/jobs",
     icon: (<BriefcaseIcon />),
+  },
+  {
+    title: "Payments",
+    url: "/app/payments",
+    icon: (<DollarSignIcon />),
   },
   {
     title: "Settings",

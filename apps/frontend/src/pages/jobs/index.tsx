@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { useApi } from '@/hooks/use-api'
+import { usePaginatedApi } from '@/hooks/use-paginated-api'
 import { api } from '@/lib/axios'
+import { DataTablePagination } from "@workspace/ui/components/data-table-pagination"
 import {
   Table,
   TableBody,
@@ -56,7 +57,8 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export function JobsPage() {
-  const { data: jobs, isLoading, error, refetch } = useApi<JobData[]>('/jobs')
+  const [page, setPage] = useState(1)
+  const { data: jobs, meta, isLoading, error, refetch } = usePaginatedApi<JobData>('/jobs', page)
   
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -226,7 +228,7 @@ export function JobsPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Link to={`/app/jobs/${job.id}`}>
+                    <Link to="/app/jobs/$id" params={{ id: job.id }}>
                       <Button variant="ghost" size="sm">
                         View Detail
                       </Button>
@@ -243,6 +245,14 @@ export function JobsPage() {
             )}
           </TableBody>
         </Table>
+        {meta && (
+          <DataTablePagination
+            page={meta.page}
+            totalPages={meta.totalPages}
+            onPageChange={setPage}
+            isLoading={isLoading}
+          />
+        )}
       </div>
     </div>
   )

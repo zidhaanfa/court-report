@@ -2,7 +2,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { Link } from "@tanstack/react-router"
-import { useApi } from "@/hooks/use-api"
+import { usePaginatedApi } from "@/hooks/use-paginated-api"
+import { DataTablePagination } from "@workspace/ui/components/data-table-pagination"
 import { Loader2Icon, AlertCircleIcon, UsersIcon, PlusIcon } from "lucide-react"
 import { useState } from "react"
 import { api } from "@/lib/axios"
@@ -33,7 +34,8 @@ interface UserData {
 
 
 export function UsersPage() {
-  const { data: users, isLoading, error, refetch } = useApi<UserData[]>('/users?limit=50')
+  const [page, setPage] = useState(1)
+  const { data: users, meta, isLoading, error, refetch } = usePaginatedApi<UserData>('/users', page)
   const [open, setOpen] = useState(false)
   const [creating, setCreating] = useState(false)
 
@@ -182,6 +184,14 @@ export function UsersPage() {
             )}
           </TableBody>
         </Table>
+        {meta && (
+          <DataTablePagination
+            page={meta.page}
+            totalPages={meta.totalPages}
+            onPageChange={setPage}
+            isLoading={isLoading}
+          />
+        )}
       </div>
     </div>
   )
