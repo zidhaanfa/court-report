@@ -16,9 +16,8 @@ import {
   TrashIcon,
   PencilIcon,
 } from "lucide-react"
-import { useApi } from "@/hooks/use-api"
-import { api } from "@/lib/axios"
-import { useState, useEffect } from "react"
+import { useRoleStore } from "@/stores/role.store"
+import React, { useState, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -51,8 +50,13 @@ interface RoleData {
 
 export function RoleDetailPage() {
   const { id } = useParams({ from: "/app/access/roles/$id" })
-  const { data: role, isLoading, error, refetch } = useApi<RoleData>(`/roles/${id}`)
-  const { data: allPermissions } = useApi<Permission[]>('/roles/permissions')
+  const { selectedRole: role, detailLoading: isLoading, detailError: error, allPermissions, fetchRoleById, fetchAllPermissions, updateRole, deleteRole, clearSelectedRole } = useRoleStore()
+
+  useEffect(() => {
+    fetchRoleById(id)
+    fetchAllPermissions()
+    return () => clearSelectedRole()
+  }, [id, fetchRoleById, fetchAllPermissions, clearSelectedRole])
 
   const [editOpen, setEditOpen] = useState(false)
   const [updating, setUpdating] = useState(false)
@@ -77,13 +81,13 @@ export function RoleDetailPage() {
     e.preventDefault()
     setUpdating(true)
     try {
-      await api.patch(`/roles/${id}`, {
+      await updateRole(id, {
         name: editData.name,
         description: editData.description || undefined,
         permissionIds: editData.permissionIds,
       })
       setEditOpen(false)
-      refetch()
+      fetchRoleById(id)
     } catch (err: any) {
       alert(err?.response?.data?.message ?? 'Failed to update role')
     } finally {
@@ -104,7 +108,7 @@ export function RoleDetailPage() {
     if (!role) return
     if (!confirm(`Delete role "${role.name}"? This cannot be undone.`)) return
     try {
-      await api.delete(`/roles/${id}`)
+      await deleteRole(id)
       window.location.href = '/app/access/roles'
     } catch (err: any) {
       alert(err?.response?.data?.message ?? 'Failed to delete role')

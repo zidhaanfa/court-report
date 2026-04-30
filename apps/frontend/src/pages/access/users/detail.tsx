@@ -1,13 +1,8 @@
-import { useParams } from "@tanstack/react-router"
-import { Badge } from "@workspace/ui/components/badge"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card"
-import { Button } from "@workspace/ui/components/button"
-import { Link } from "@tanstack/react-router"
+import { useParams } from '@tanstack/react-router'
+import { Badge } from '@workspace/ui/components/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card'
+import { Button } from '@workspace/ui/components/button'
+import { Link } from '@tanstack/react-router'
 import {
   ChevronLeftIcon,
   Loader2Icon,
@@ -15,10 +10,10 @@ import {
   ShieldIcon,
   PlusIcon,
   TrashIcon,
-} from "lucide-react"
-import { useApi } from "@/hooks/use-api"
-import { api } from "@/lib/axios"
-import { useState } from "react"
+} from 'lucide-react'
+import { useUserStore } from '@/stores/user.store'
+import { useRoleStore } from '@/stores/role.store'
+import React, { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -27,58 +22,45 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@workspace/ui/components/dialog"
+} from '@workspace/ui/components/dialog'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@workspace/ui/components/select"
-
-interface Permission {
-  id: string
-  name: string
-  description: string
-}
-
-interface Role {
-  id: string
-  name: string
-  description: string
-  isSystem: boolean
-  permissions: Permission[]
-}
-
-interface UserData {
-  id: string
-  email: string
-  fullName: string
-  phone: string | null
-  city: string | null
-  isAvailable: boolean
-  status: string
-  roles: Role[]
-  createdAt: string
-  updatedAt: string
-}
+} from '@workspace/ui/components/select'
 
 export function UserDetailPage() {
-  const { id } = useParams({ from: "/app/access/users/$id" })
-  const { data: user, isLoading, error, refetch } = useApi<UserData>(`/users/${id}`)
-  const { data: allRoles } = useApi<Role[]>('/roles')
+  const { id } = useParams({ from: '/app/access/users/$id' })
+  const {
+    selectedUser: user,
+    detailLoading: isLoading,
+    detailError: error,
+    fetchUserById,
+    assignRole,
+    removeRole,
+    clearSelectedUser,
+  } = useUserStore()
+  const { roles: allRoles, fetchRoles } = useRoleStore()
   const [assignOpen, setAssignOpen] = useState(false)
-  const [selectedRoleId, setSelectedRoleId] = useState("")
+  const [selectedRoleId, setSelectedRoleId] = useState('')
   const [assigning, setAssigning] = useState(false)
+
+  React.useEffect(() => {
+    fetchUserById(id)
+    fetchRoles(1, 100) // fetch all roles
+    return () => clearSelectedUser()
+  }, [id, fetchUserById, fetchRoles, clearSelectedUser])
 
   const handleAssignRole = async () => {
     if (!selectedRoleId) return
     setAssigning(true)
     try {
-      await api.post(`/users/${id}/roles`, { roleId: selectedRoleId })
+      await assignRole(id, selectedRoleId)
       setAssignOpen(false)
-      setSelectedRoleId("")
-      refetch()
+      setSelectedRoleId('')
+      fetchUserById(id)
     } catch (err: any) {
       alert(err?.response?.data?.message ?? 'Failed to assign role')
     } finally {
@@ -89,8 +71,8 @@ export function UserDetailPage() {
   const handleRemoveRole = async (roleId: string, roleName: string) => {
     if (!confirm(`Remove role "${roleName}" from this user?`)) return
     try {
-      await api.delete(`/users/${id}/roles/${roleId}`)
-      refetch()
+      await removeRole(id, roleId)
+      fetchUserById(id)
     } catch (err: any) {
       alert(err?.response?.data?.message ?? 'Failed to remove role')
     }
@@ -117,9 +99,7 @@ export function UserDetailPage() {
   }
 
   // Roles not yet assigned
-  const availableRoles = (allRoles ?? []).filter(
-    (r) => !user.roles.some((ur) => ur.id === r.id),
-  )
+  const availableRoles = (allRoles ?? []).filter((r) => !user.roles.some((ur) => ur.id === r.id))
 
   return (
     <div className="flex flex-col gap-6">
@@ -130,9 +110,7 @@ export function UserDetailPage() {
           </Link>
         </Button>
         <h1 className="text-2xl font-bold">{user.fullName}</h1>
-        <Badge variant={user.status === 'ACTIVE' ? 'default' : 'destructive'}>
-          {user.status}
-        </Badge>
+        <Badge variant={user.status === 'ACTIVE' ? 'default' : 'destructive'}>{user.status}</Badge>
       </div>
 
       {/* Overview Card */}
@@ -187,7 +165,9 @@ export function UserDetailPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {availableRoles.map((r) => (
-                        <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -208,11 +188,18 @@ export function UserDetailPage() {
           ) : (
             <div className="space-y-3">
               {user.roles.map((role) => (
-                <div key={role.id} className="flex items-start justify-between rounded-md border p-3">
+                <div
+                  key={role.id}
+                  className="flex items-start justify-between rounded-md border p-3"
+                >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm">{role.name}</span>
-                      {role.isSystem && <Badge variant="outline" className="text-xs">System</Badge>}
+                      {role.isSystem && (
+                        <Badge variant="outline" className="text-xs">
+                          System
+                        </Badge>
+                      )}
                     </div>
                     {role.description && (
                       <p className="text-xs text-muted-foreground">{role.description}</p>

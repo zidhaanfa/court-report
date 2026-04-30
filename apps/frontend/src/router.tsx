@@ -19,6 +19,7 @@ import { PermissionDetailPage } from './pages/access/permissions/detail'
 import { SettingsPage } from './pages/settings'
 import { JobsPage } from './pages/jobs'
 import { JobDetailPage } from './pages/jobs/detail'
+import { PaymentsPage } from './pages/payments'
 import { LoginForm } from './components/login-form'
 
 // -- Layouts --
@@ -145,6 +146,13 @@ const jobDetailRoute = createRoute({
   component: JobDetailPage,
 })
 
+// Payments
+const paymentsRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: 'payments',
+  component: PaymentsPage,
+})
+
 // Auth Group (No Sidebar)
 const authLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -239,6 +247,7 @@ const routeTree = rootRoute.addChildren([
     settingsRoute,
     jobsRoute,
     jobDetailRoute,
+    paymentsRoute,
   ]),
   authLayoutRoute.addChildren([signInRoute]),
 ])

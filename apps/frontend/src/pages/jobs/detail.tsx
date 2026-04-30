@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useRouter } from '@tanstack/react-router'
-import { useApi } from '@/hooks/use-api'
-import { api } from '@/lib/axios'
+import { useJobStore } from '@/stores/job.store'
+import { useUserStore } from '@/stores/user.store'
 import { useAuthStore } from '@/stores/auth.store'
 import {
   Card,
@@ -38,60 +38,52 @@ import {
   AlertCircle,
 } from 'lucide-react'
 
-// Types
-interface UserRef {
-  id: string
-  fullName: string
-  city?: string
-  isAvailable?: boolean
-}
-interface JobData {
-  id: string
-  caseName: string
-  duration: number
-  locationType: 'PHYSICAL' | 'REMOTE'
-  locationCity?: string
-  status: 'NEW' | 'ASSIGNED' | 'TRANSCRIBED' | 'REVIEWED' | 'COMPLETED'
-  reporter?: UserRef
-  editor?: UserRef
-  createdAt: string
-}
-interface PaymentData {
-  id: string
-  assignmentType: 'REPORTER' | 'EDITOR'
-  rate: number
-  amount: number
-  status: 'PENDING' | 'PAID'
-  user: UserRef
-}
-interface JobLogData {
-  id: string
-  fromStatus: string | null
-  toStatus: string
-  note: string | null
-  createdAt: string
-  changedByUser: UserRef
-}
-
 export function JobDetailPage() {
   const router = useRouter()
-  // React Router uses useParams hook, but tanstack provides it via route definition or generic hooks.
-  // For simplicity, we'll extract it from the window location if useParams is strict,
-  // but TanStack router allows useParams({ from: '/app/jobs/$id' }).
-  // Since we haven't typed the route perfectly here, let's just parse the URL.
   const jobId = window.location.pathname.split('/').pop() || ''
 
   const currentUser = useAuthStore((s) => s.user)
   const hasPermission = useAuthStore((s) => s.hasPermission)
 
-  const { data: job, isLoading, error, refetch: refetchJob } = useApi<JobData>(`/jobs/${jobId}`)
-  const { data: payments, refetch: refetchPayments } = useApi<PaymentData[]>(
-    `/payments/job/${jobId}`
-  )
-  const { data: logs, refetch: refetchLogs } = useApi<JobLogData[]>(`/jobs/${jobId}/logs`)
+  const {
+    selectedJob: job,
+    detailLoading: isLoading,
+    detailError: error,
+    jobPayments: payments,
+    jobLogs: logs,
+    fetchJobById,
+    fetchJobPayments,
+    fetchJobLogs,
+    assignReporter,
+    assignEditor,
+    updateJobStatus,
+    clearSelectedJob,
+  } = useJobStore()
+  const {
+    reporters: availableReporters,
+    editors: availableEditors,
+    fetchReporters,
+    fetchEditors,
+  } = useUserStore()
+
+  React.useEffect(() => {
+    fetchJobById(jobId)
+    fetchJobPayments(jobId)
+    fetchJobLogs(jobId)
+    fetchReporters()
+    fetchEditors()
+    return () => clearSelectedJob()
+  }, [
+    jobId,
+    fetchJobById,
+    fetchJobPayments,
+    fetchJobLogs,
+    fetchReporters,
+    fetchEditors,
+    clearSelectedJob,
+  ])
 
   // Reporter Modal
-  const { data: availableReporters } = useApi<UserRef[]>('/users/reporters')
   const [isReporterModalOpen, setReporterModalOpen] = useState(false)
   const [selectedReporterId, setSelectedReporterId] = useState('')
   const [forceReporter, setForceReporter] = useState(false)
@@ -99,7 +91,6 @@ export function JobDetailPage() {
   const [reporterError, setReporterError] = useState('')
 
   // Editor Modal
-  const { data: availableEditors } = useApi<UserRef[]>('/users/editors')
   const [isEditorModalOpen, setEditorModalOpen] = useState(false)
   const [selectedEditorId, setSelectedEditorId] = useState('')
   const [assigningEditor, setAssigningEditor] = useState(false)
@@ -109,19 +100,16 @@ export function JobDetailPage() {
   const [updatingStatus, setUpdatingStatus] = useState(false)
 
   const refreshAll = () => {
-    refetchJob()
-    refetchPayments()
-    refetchLogs()
+    fetchJobById(jobId)
+    fetchJobPayments(jobId)
+    fetchJobLogs(jobId)
   }
 
   const handleAssignReporter = async () => {
     setAssigningReporter(true)
     setReporterError('')
     try {
-      await api.post(`/jobs/${jobId}/assign-reporter`, {
-        reporterId: selectedReporterId,
-        force: forceReporter,
-      })
+      await assignReporter(jobId, selectedReporterId, forceReporter)
       setReporterModalOpen(false)
       setForceReporter(false)
       refreshAll()
@@ -140,9 +128,7 @@ export function JobDetailPage() {
     setAssigningEditor(true)
     setEditorError('')
     try {
-      await api.post(`/jobs/${jobId}/assign-editor`, {
-        editorId: selectedEditorId,
-      })
+      await assignEditor(jobId, selectedEditorId)
       setEditorModalOpen(false)
       refreshAll()
     } catch (err: any) {
@@ -155,7 +141,7 @@ export function JobDetailPage() {
   const handleUpdateStatus = async (newStatus: string) => {
     setUpdatingStatus(true)
     try {
-      await api.patch(`/jobs/${jobId}/status`, { status: newStatus })
+      await updateJobStatus(jobId, newStatus)
       refreshAll()
     } catch (err: any) {
       alert(err?.response?.data?.message ?? err.message)
@@ -197,7 +183,7 @@ export function JobDetailPage() {
   const canCompleteJob = hasPermission('job:complete')
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
+    <div className="flex flex-col gap-6 mx-auto w-full">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.history.back()}>
           <ArrowLeftIcon className="h-5 w-5" />
@@ -306,17 +292,19 @@ export function JobDetailPage() {
                     )}
                   </div>
                 </div>
-                {job.status === 'ASSIGNED' && canMarkTranscribed && (isAssignedReporter || isAdminOrManager) && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                    onClick={() => handleUpdateStatus('TRANSCRIBED')}
-                    disabled={updatingStatus}
-                  >
-                    Mark as Transcribed
-                  </Button>
-                )}
+                {job.status === 'ASSIGNED' &&
+                  canMarkTranscribed &&
+                  (isAssignedReporter || isAdminOrManager) && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                      onClick={() => handleUpdateStatus('TRANSCRIBED')}
+                      disabled={updatingStatus}
+                    >
+                      Mark as Transcribed
+                    </Button>
+                  )}
               </div>
 
               <div className="flex items-center justify-between pt-2">
